@@ -2,10 +2,12 @@
 name = "neural_network_explanation_presentation_animations"
 version = "0.1.0"
 description = ""
-authors = ["Greg Olmschenk <greg@olmschenk.com>"]
+authors = ["Greg Olmschenk <greg@olmsachenk.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.11"
+manim = "^0.16.0"
+numpy = "^1.23.2"
 
 [tool.poetry.dev-dependencies]
 
