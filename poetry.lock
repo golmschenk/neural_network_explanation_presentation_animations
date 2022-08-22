@@ -434,6 +434,22 @@ notebook = ["ipywidgets (>=6)"]
 dev = ["wheel", "twine", "py-make (>=0.1.0)"]
 
 [[package]]
+name = "trimesh"
+version = "3.13.5"
+description = "Import, export, process, analyze and view triangular meshes."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+test = ["coveralls", "pyinstrument", "ezdxf", "pytest", "pytest-cov"]
+easy = ["chardet", "sympy", "requests", "rtree", "pycollada", "xxhash", "shapely", "msgpack", "colorlog", "pyglet", "jsonschema", "pillow", "scipy", "networkx", "lxml", "setuptools", "svg.path"]
+all = ["chardet", "xatlas", "pycollada", "shapely", "pyglet", "psutil", "python-fcl", "jsonschema", "scipy", "pillow", "triangle", "glooey", "meshio", "svg.path", "sympy", "requests", "rtree", "mapbox-earcut", "colorlog", "xxhash", "msgpack", "scikit-image", "networkx", "lxml", "setuptools"]
+
+[[package]]
 name = "typing-extensions"
 version = "4.3.0"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -468,7 +484,7 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "68286627d991022b42425593781513eba64c249bd6df42b30a324b59d64ec1ed"
+content-hash = "909ce352eb07d13d1b8f57b99ade3f9dae3fa68364ddfa7ecd6cba825fa2e7f1"
 
 [metadata.files]
 certifi = [
@@ -937,6 +953,10 @@ srt = [
 tqdm = [
     {file = "tqdm-4.64.0-py2.py3-none-any.whl", hash = "sha256:74a2cdefe14d11442cedf3ba4e21a3b84ff9a2dbdc6cfae2c34addb2a14a5ea6"},
     {file = "tqdm-4.64.0.tar.gz", hash = "sha256:40be55d30e200777a307a7585aee69e4eabb46b4ec6a4b4a5f2d9f11e7d5408d"},
+]
+trimesh = [
+    {file = "trimesh-3.13.5-py3-none-any.whl", hash = "sha256:3a7f7481146546e5a1d6d849153d32d5b7c8108539cba21b40bbc74a1b14a86b"},
+    {file = "trimesh-3.13.5.tar.gz", hash = "sha256:d7e072719d5f1447dbaa81ecfd30e71995dcf084735b3cb6a59d9891338f31a0"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.3.0-py3-none-any.whl", hash = "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02"},
