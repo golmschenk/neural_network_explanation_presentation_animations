@@ -1,9 +1,11 @@
 import math
 from pathlib import Path
+from typing import List
 
 import numpy as np
 from manim import Scene, Circle, PINK, Create, config, ImageMobject, RIGHT, Rectangle, FadeIn, FadeOut, BLACK, \
-    ReplacementTransform, FadeTransform, DOWN, Dot, ThreeDScene, Sphere, PI, TAU, RED, VGroup, Line3D, IN, Surface
+    ReplacementTransform, FadeTransform, DOWN, Dot, ThreeDScene, Sphere, PI, TAU, RED, VGroup, Line3D, IN, Surface, \
+    Mobject
 
 
 class MainScene(ThreeDScene):
@@ -36,9 +38,11 @@ class MainScene(ThreeDScene):
             pixel_grid.add(line)
         self.add(pixel_grid)
         self.play(FadeOut(planetary_nebula_image_mobject), FadeIn(pixel_grid))
-        # Add a neuron.
-        self.next_section(skip_animations=skip_animations)
-
+        # Create all neurons.
+        def pixel_index_to_position(x_index, y_index) -> (float, float):
+            x_position_ = (-image_large_size / 2) + (pixel_size / 2) + (x_index * pixel_size)
+            y_position_ = (image_large_size / 2) - (pixel_size / 2) - (y_index * pixel_size)
+            return x_position_, y_position_
         def create_neuron_kernel(x_center, y_center) -> XyRectangle:
             kernel_size = (3 * pixel_size)
             x = x_center - (kernel_size / 2)
@@ -52,7 +56,7 @@ class MainScene(ThreeDScene):
         def create_neuron(x, y):
             neuron_z_position = 1
             neuron_ = Sphere(
-                center=(neuron_x_position, neuron_y_position, neuron_z_position),
+                center=(x, y, neuron_z_position),
                 radius=((2 * pixel_size) / 5),
                 resolution=(sphere_resolution, sphere_resolution),
                 sheen_factor=0.0,
@@ -63,24 +67,25 @@ class MainScene(ThreeDScene):
             neuron_.set_color(RED)
             return neuron_
 
-        def pixel_index_to_position(x_index, y_index) -> (float, float):
-            x_position_ = (-image_large_size / 2) + (pixel_size / 2) + (x_index * pixel_size)
-            y_position_ = (image_large_size / 2) - (pixel_size / 2) - (y_index * pixel_size)
-            return x_position_, y_position_
+        neurons: List[List[Mobject]] = []
+        neuron_kernels: List[List[Mobject]] = []
+        neuron_outputs: List[List[Mobject]] = []
+        for pixel_index_x in range(1, number_of_pixels-1):
+            neurons.append([])
+            neuron_kernels.append([])
+            for pixel_index_y in range(1, number_of_pixels-1):
+                x_position, y_position = pixel_index_to_position(pixel_index_x, pixel_index_y)
+                neurons[pixel_index_x - 1].append(create_neuron(x_position, y_position))
+                neuron_kernels[pixel_index_x - 1].append(create_neuron_kernel(x_position, y_position))
 
-        neuron_x_position, neuron_y_position = pixel_index_to_position(1, 1)
-        neuron = create_neuron(neuron_x_position, neuron_y_position)
-        neuron_kernel = create_neuron_kernel(neuron_x_position, neuron_y_position)
-        self.play(FadeIn(neuron, shift=IN), FadeIn(neuron_kernel, shift=IN))
+        self.next_section(skip_animations=False)
+        self.play(FadeIn(neurons[0][0], shift=IN), FadeIn(neuron_kernels[0][0], shift=IN))
         # Move to angled view.
-        self.next_section(skip_animations=skip_animations)
+        self.next_section(skip_animations=False)
         self.move_camera(1.2 * math.tau / 8, -3 * math.tau / 8)
         # Add another neuron
         self.next_section(skip_animations=False)
-        neuron_x_position, neuron_y_position = pixel_index_to_position(2, 1)
-        neuron = create_neuron(neuron_x_position, neuron_y_position)
-        neuron_kernel = create_neuron_kernel(neuron_x_position, neuron_y_position)
-        self.play(FadeIn(neuron, shift=IN), FadeIn(neuron_kernel, shift=IN))
+        self.play(FadeIn(neurons[1][0], shift=IN), FadeIn(neuron_kernels[1][0], shift=IN))
 
         self.next_section(skip_animations=skip_animations)
 
