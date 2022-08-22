@@ -8,7 +8,7 @@ from manim import Scene, Circle, PINK, Create, config, ImageMobject, RIGHT, Rect
     Mobject, OUT, LaggedStart
 
 
-class MainScene(ThreeDScene):
+class ThreeDNeuronsLookingAtPixelsScene(ThreeDScene):
     def construct(self):
         planetary_nebula_image_mobject = ImageMobject(
             Path('neural_network_explanation_presentation_animations/images/grayscale_ngc7293_planetary_nebula.jpg'))
@@ -138,4 +138,4 @@ if __name__ == '__main__':
     config.movie_file_extension = '.mov'
     config.save_sections = True
     config.quality = 'low_quality'
-    MainScene().render(preview=True)
+    ThreeDNeuronsLookingAtPixelsScene().render(preview=True)
