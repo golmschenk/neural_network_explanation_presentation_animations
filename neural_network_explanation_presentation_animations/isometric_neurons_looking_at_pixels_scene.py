@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 from pathlib import Path
 from typing import List, Union
@@ -25,43 +27,15 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
 
     def construct(self):
         self.next_section(skip_animations=self.skip_animations)
-        planetary_nebula_image_mobject = ImageMobject(
-            Path('neural_network_explanation_presentation_animations/images/grayscale_ngc7293_planetary_nebula.jpg'))
-        planetary_nebula_image_mobject.scale_to_fit_width(self.image_large_size)
+        planetary_nebula_image_mobject = self.create_image()
         self.add(planetary_nebula_image_mobject)
 
         self.next_section(skip_animations=self.skip_animations)
-        cartesian_pixel_grid: List[Mobject] = []
-        isometric_pixel_grid: List[Mobject] = []
-        neuron_groups: List[List[NeuronGroup]] = []
-        for pixel_y_index in range(self.number_of_pixels):
-            if pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1:
-                neuron_groups.append([])
-            for pixel_x_index in range(self.number_of_pixels):
-                left, top = self.pixel_index_to_pixel_start_cartesian_xy(pixel_x_index, pixel_y_index)
-                right = left + self.pixel_size
-                bottom = top - self.pixel_size
-                polygon_cartesian_positions = [
-                    [left, top, 0],
-                    [right, top, 0],
-                    [right, bottom, 0],
-                    [left, bottom, 0],
-                ]
-                polygon_isometric_positions = self.from_cartesian_position_to_isometric_position(
-                    np.array(polygon_cartesian_positions))
-                cartesian_pixel_grid.append(self.create_pixel_grid_polygon(polygon_cartesian_positions))
-                isometric_pixel_grid.append(self.create_pixel_grid_polygon(polygon_isometric_positions))
-                if (pixel_x_index != 0 and pixel_x_index != self.number_of_pixels - 1 and
-                        pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1):
-                    neuron_group = NeuronGroup(self, pixel_x_index, pixel_y_index)
-                    neuron_groups[pixel_y_index - 1].append(neuron_group)
+        cartesian_pixel_grid, isometric_pixel_grid, neuron_groups = self.create_grids_and_neuron_groups()
         self.play(FadeOut(planetary_nebula_image_mobject), FadeIn(*cartesian_pixel_grid))
 
         self.next_section(skip_animations=self.skip_animations)
-        cartesian_neuron_position = self.pixel_index_to_pixel_center_cartesian_xy(pixel_x_index=1, pixel_y_index=1)
-        cartesian_neuron = self.create_neuron([cartesian_neuron_position[0], cartesian_neuron_position[1], 1])
-        cartesian_neuron_kernel = self.create_neuron_kernel_centered_on_pixel_index(pixel_x_index=1, pixel_y_index=1,
-                                                                                    isometric=False)
+        cartesian_neuron, cartesian_neuron_kernel = self.create_cartesian_neuron_collection()
         self.play(FadeIn(cartesian_neuron, shift=IN))
 
         self.next_section(skip_animations=self.skip_animations)
@@ -108,6 +82,46 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
 
         self.next_section(skip_animations=self.skip_animations)
         self.wait(1)
+
+    def create_cartesian_neuron_collection(self):
+        cartesian_neuron_position = self.pixel_index_to_pixel_center_cartesian_xy(pixel_x_index=1, pixel_y_index=1)
+        cartesian_neuron = self.create_neuron([cartesian_neuron_position[0], cartesian_neuron_position[1], 1])
+        cartesian_neuron_kernel = self.create_neuron_kernel_centered_on_pixel_index(pixel_x_index=1, pixel_y_index=1,
+                                                                                    isometric=False)
+        return cartesian_neuron, cartesian_neuron_kernel
+
+    def create_grids_and_neuron_groups(self) -> (List[Mobject], List[Mobject], List[List[NeuronGroup]]):
+        cartesian_pixel_grid: List[Mobject] = []
+        isometric_pixel_grid: List[Mobject] = []
+        neuron_groups: List[List[NeuronGroup]] = []
+        for pixel_y_index in range(self.number_of_pixels):
+            if pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1:
+                neuron_groups.append([])
+            for pixel_x_index in range(self.number_of_pixels):
+                left, top = self.pixel_index_to_pixel_start_cartesian_xy(pixel_x_index, pixel_y_index)
+                right = left + self.pixel_size
+                bottom = top - self.pixel_size
+                polygon_cartesian_positions = [
+                    [left, top, 0],
+                    [right, top, 0],
+                    [right, bottom, 0],
+                    [left, bottom, 0],
+                ]
+                polygon_isometric_positions = self.from_cartesian_position_to_isometric_position(
+                    np.array(polygon_cartesian_positions))
+                cartesian_pixel_grid.append(self.create_pixel_grid_polygon(polygon_cartesian_positions))
+                isometric_pixel_grid.append(self.create_pixel_grid_polygon(polygon_isometric_positions))
+                if (pixel_x_index != 0 and pixel_x_index != self.number_of_pixels - 1 and
+                        pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1):
+                    neuron_group = NeuronGroup(self, pixel_x_index, pixel_y_index)
+                    neuron_groups[pixel_y_index - 1].append(neuron_group)
+        return cartesian_pixel_grid, isometric_pixel_grid, neuron_groups
+
+    def create_image(self) -> ImageMobject:
+        planetary_nebula_image_mobject = ImageMobject(
+            Path('neural_network_explanation_presentation_animations/images/grayscale_ngc7293_planetary_nebula.jpg'))
+        planetary_nebula_image_mobject.scale_to_fit_width(self.image_large_size)
+        return planetary_nebula_image_mobject
 
     def pixel_index_to_pixel_center_cartesian_xy(self, pixel_x_index: float, pixel_y_index: float) -> (float, float):
         cartesian_x_position = (-self.image_large_size / 2) + (self.pixel_size / 2) + (pixel_x_index * self.pixel_size)
