@@ -3,6 +3,8 @@ from manim import Scene, LaggedStart, ReplacementTransform, FadeIn, IN, FadeOut
 from neural_network_explanation_presentation_animations.configuration import set_up_configuration
 from neural_network_explanation_presentation_animations.isometric_neurons_looking_at_pixels_sub_scene import \
     IsometricNeuronsLookingAtPixelsSubScene
+from neural_network_explanation_presentation_animations.layers_building_complexity_sub_scene import \
+    LayerBuildingComplexitySubScene
 
 
 class MainScene(Scene):
@@ -10,6 +12,7 @@ class MainScene(Scene):
         super().__init__()
         self.isometric_neurons_looking_at_pixels_sub_scene: IsometricNeuronsLookingAtPixelsSubScene = \
             IsometricNeuronsLookingAtPixelsSubScene()
+        self.layers_building_complexity_sub_scene: LayerBuildingComplexitySubScene = LayerBuildingComplexitySubScene()
 
     def construct(self):
         self.next_section(skip_animations=self.skip_animations)
