@@ -4,7 +4,7 @@ from typing import List, Union
 
 import numpy as np
 from manim import Scene, config, ImageMobject, FadeTransform, Mobject, Polygon, FadeOut, FadeIn, ReplacementTransform, \
-    BLACK, Circle, RED, DOWN, IN, Animation, LaggedStart
+    BLACK, Circle, RED, DOWN, IN, Animation, LaggedStart, UP
 
 
 class IsometricNeuronsLookingAtPixelsScene(Scene):
@@ -96,6 +96,15 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
         self.play(LaggedStart(*section_animations, lag_ratio=0.02))
 
         self.next_section(skip_animations=self.skip_animations)
+        section_animations = []
+        for y_index in range(len(neuron_groups)):
+            for x_index in range(len(neuron_groups[y_index])):
+                neuron_group = neuron_groups[y_index][x_index]
+                if not neuron_group.output_animation_created:
+                    section_animations.append(neuron_group.create_output_animation())
+        self.play(LaggedStart(*section_animations, lag_ratio=0.01))
+
+        self.next_section(skip_animations=self.skip_animations)
         self.wait(1)
 
     def pixel_index_to_pixel_center_cartesian_xy(self, pixel_x_index: float, pixel_y_index: float) -> (float, float):
@@ -176,15 +185,44 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
                                                                               end_pixel_y_index)
         left, top = start_cartesian_position[0], start_cartesian_position[1]
         right, bottom = end_cartesian_position[0], end_cartesian_position[1]
+        z_position = 0.01
         polygon_positions = np.array([
-            [left, top, 0.01],
-            [right, top, 0.01],
-            [right, bottom, 0.01],
-            [left, bottom, 0.01],
+            [left, top, z_position],
+            [right, top, z_position],
+            [right, bottom, z_position],
+            [left, bottom, z_position],
         ])
         if isometric:
             polygon_positions = self.from_cartesian_position_to_isometric_position(polygon_positions)
         polygon = Polygon(*polygon_positions, color=RED, fill_color=RED, fill_opacity=0.5, stroke_opacity=0.0)
+        return polygon
+
+    def create_neuron_output_centered_on_pixel_index(self, pixel_x_index: float, pixel_y_index: float,
+                                                     isometric: bool = True) -> Polygon:
+        output_size = 1
+        center_pixel_x_index = pixel_x_index + 0.5
+        center_pixel_y_index = pixel_y_index + 0.5
+        start_pixel_x_index = center_pixel_x_index - (output_size / 2)
+        start_pixel_y_index = center_pixel_y_index - (output_size / 2)
+        end_pixel_x_index = center_pixel_x_index + (output_size / 2)
+        end_pixel_y_index = center_pixel_y_index + (output_size / 2)
+        start_cartesian_position = self.pixel_index_to_pixel_start_cartesian_xy(start_pixel_x_index,
+                                                                                start_pixel_y_index)
+        end_cartesian_position = self.pixel_index_to_pixel_start_cartesian_xy(end_pixel_x_index,
+                                                                              end_pixel_y_index)
+        left, top = start_cartesian_position[0], start_cartesian_position[1]
+        right, bottom = end_cartesian_position[0], end_cartesian_position[1]
+        z_position = 2.0
+        polygon_positions = np.array([
+            [left, top, z_position],
+            [right, top, z_position],
+            [right, bottom, z_position],
+            [left, bottom, z_position],
+        ])
+        if isometric:
+            polygon_positions = self.from_cartesian_position_to_isometric_position(polygon_positions)
+        polygon = Polygon(*polygon_positions, color=RED, fill_color=RED, fill_opacity=1.0, stroke_color=BLACK,
+                          stroke_opacity=1.0)
         return polygon
 
 
@@ -194,6 +232,10 @@ class NeuronGroup:
         self.neuron_animation_created: bool = False
         self.kernel: Polygon = scene.create_neuron_kernel_centered_on_pixel_index(pixel_x_index, pixel_y_index)
         self.kernel_animation_created: bool = False
+        self.output: Polygon = scene.create_neuron_output_centered_on_pixel_index(pixel_x_index, pixel_y_index)
+        self.output_animation_created: bool = False
+        self.cartesian_output: Polygon = scene.create_neuron_output_centered_on_pixel_index(
+            pixel_x_index, pixel_y_index, isometric=False)
 
     def create_neuron_animation(self) -> Animation:
         self.neuron_animation_created = True
@@ -202,6 +244,10 @@ class NeuronGroup:
     def create_kernel_animation(self) -> Animation:
         self.kernel_animation_created = True
         return FadeIn(self.kernel, shift=DOWN)
+
+    def create_output_animation(self) -> Animation:
+        self.output_animation_created = True
+        return FadeIn(self.output, shift=UP)
 
 
 
