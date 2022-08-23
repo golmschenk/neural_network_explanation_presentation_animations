@@ -31,7 +31,7 @@ class ThreeDNeuronsLookingAtPixelsScene(Scene):
         isometric_pixel_grid: List[Mobject] = []
         for pixel_x_index in range(self.number_of_pixels):
             for pixel_y_index in range(self.number_of_pixels):
-                left, top = self.pixel_index_to_pixel_start_cartesian_position(pixel_x_index, pixel_y_index)
+                left, top = self.pixel_index_to_pixel_start_cartesian_xy(pixel_x_index, pixel_y_index)
                 right = left + self.pixel_size
                 bottom = top - self.pixel_size
                 polygon_cartesian_positions = [
@@ -40,7 +40,7 @@ class ThreeDNeuronsLookingAtPixelsScene(Scene):
                     [right, bottom, 0],
                     [left, bottom, 0],
                 ]
-                polygon_isometric_positions = self.cartesian_position_to_isometric_position(
+                polygon_isometric_positions = self.from_cartesian_position_to_isometric_position(
                     np.array(polygon_cartesian_positions))
                 cartesian_pixel_grid.append(self.create_pixel_grid_polygon(polygon_cartesian_positions))
                 isometric_pixel_grid.append(self.create_pixel_grid_polygon(polygon_isometric_positions))
@@ -57,17 +57,24 @@ class ThreeDNeuronsLookingAtPixelsScene(Scene):
         self.next_section(skip_animations=self.skip_animations)
         self.wait(1)
 
-    def pixel_index_to_pixel_center_cartesian_position(self, pixel_x_index, pixel_y_index) -> (float, float):
+    def pixel_index_to_pixel_center_cartesian_xy(self, pixel_x_index, pixel_y_index) -> (float, float):
         cartesian_x_position = (-self.image_large_size / 2) + (self.pixel_size / 2) + (pixel_x_index * self.pixel_size)
         cartesian_y_position = (self.image_large_size / 2) - (self.pixel_size / 2) - (pixel_y_index * self.pixel_size)
         return cartesian_x_position, cartesian_y_position
 
-    def pixel_index_to_pixel_start_cartesian_position(self, pixel_x_index, pixel_y_index) -> (float, float):
+    def pixel_index_to_pixel_start_cartesian_xy(self, pixel_x_index, pixel_y_index) -> (float, float):
         cartesian_x_position = (-self.image_large_size / 2) + (pixel_x_index * self.pixel_size)
         cartesian_y_position = (self.image_large_size / 2) - (pixel_y_index * self.pixel_size)
         return cartesian_x_position, cartesian_y_position
 
-    def cartesian_position_to_isometric_position(self, cartesian_position: np.ndarray) -> np.ndarray:
+    def pixel_index_to_pixel_start_isometric_position(self, pixel_x_index, pixel_y_index) -> np.ndarray:
+        cartesian_x_position = (-self.image_large_size / 2) + (pixel_x_index * self.pixel_size)
+        cartesian_y_position = (self.image_large_size / 2) - (pixel_y_index * self.pixel_size)
+        isometric_position = self.from_cartesian_position_to_isometric_position(
+            np.array([cartesian_x_position, cartesian_y_position, 0]))
+        return isometric_position
+
+    def from_cartesian_position_to_isometric_position(self, cartesian_position: np.ndarray) -> np.ndarray:
         if len(cartesian_position.shape) == 1:
             cartesian_xy_position = cartesian_position[:2]
             cartesian_z_position = cartesian_position[[2]]
