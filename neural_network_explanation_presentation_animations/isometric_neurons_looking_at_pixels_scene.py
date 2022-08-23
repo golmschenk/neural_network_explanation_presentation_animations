@@ -6,6 +6,8 @@ import numpy as np
 from manim import Scene, config, ImageMobject, FadeTransform, Mobject, Polygon, FadeOut, FadeIn, ReplacementTransform, \
     BLACK, Circle, RED, DOWN, IN, Animation, LaggedStart, UP
 
+from neural_network_explanation_presentation_animations.configuration import set_up_configuration
+
 
 class IsometricNeuronsLookingAtPixelsScene(Scene):
     def __init__(self):
@@ -252,8 +254,5 @@ class NeuronGroup:
 
 
 if __name__ == '__main__':
-    config.background_opacity = 0
-    config.movie_file_extension = '.mov'
-    config.save_sections = True
-    config.quality = 'low_quality'
+    set_up_configuration()
     IsometricNeuronsLookingAtPixelsScene().render(preview=True)
