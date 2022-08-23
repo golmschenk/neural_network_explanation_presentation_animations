@@ -4,7 +4,7 @@ from typing import List, Union
 
 import numpy as np
 from manim import Scene, config, ImageMobject, FadeTransform, Mobject, Polygon, FadeOut, FadeIn, ReplacementTransform, \
-    BLACK, Circle, RED, DOWN, IN
+    BLACK, Circle, RED, DOWN, IN, Animation, LaggedStart
 
 
 class IsometricNeuronsLookingAtPixelsScene(Scene):
@@ -31,8 +31,11 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
         self.next_section(skip_animations=self.skip_animations)
         cartesian_pixel_grid: List[Mobject] = []
         isometric_pixel_grid: List[Mobject] = []
-        for pixel_x_index in range(self.number_of_pixels):
-            for pixel_y_index in range(self.number_of_pixels):
+        neuron_groups: List[List[NeuronGroup]] = []
+        for pixel_y_index in range(self.number_of_pixels):
+            if pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1:
+                neuron_groups.append([])
+            for pixel_x_index in range(self.number_of_pixels):
                 left, top = self.pixel_index_to_pixel_start_cartesian_xy(pixel_x_index, pixel_y_index)
                 right = left + self.pixel_size
                 bottom = top - self.pixel_size
@@ -46,15 +49,17 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
                     np.array(polygon_cartesian_positions))
                 cartesian_pixel_grid.append(self.create_pixel_grid_polygon(polygon_cartesian_positions))
                 isometric_pixel_grid.append(self.create_pixel_grid_polygon(polygon_isometric_positions))
+                if (pixel_x_index != 0 and pixel_x_index != self.number_of_pixels - 1 and
+                        pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1):
+                    neuron_group = NeuronGroup(self, pixel_x_index, pixel_y_index)
+                    neuron_groups[pixel_y_index - 1].append(neuron_group)
         self.play(FadeOut(planetary_nebula_image_mobject), FadeIn(*cartesian_pixel_grid))
 
         self.next_section(skip_animations=self.skip_animations)
         cartesian_neuron_position = self.pixel_index_to_pixel_center_cartesian_xy(pixel_x_index=1, pixel_y_index=1)
         cartesian_neuron = self.create_neuron([cartesian_neuron_position[0], cartesian_neuron_position[1], 1])
-        isometric_neuron = self.create_neuron_above_pixel_position(pixel_x_index=1, pixel_y_index=1)
         cartesian_neuron_kernel = self.create_neuron_kernel_centered_on_pixel_index(pixel_x_index=1, pixel_y_index=1,
                                                                                     isometric=False)
-        isometric_neuron_kernel = self.create_neuron_kernel_centered_on_pixel_index(pixel_x_index=1, pixel_y_index=1)
         self.play(FadeIn(cartesian_neuron, shift=IN))
 
         self.next_section(skip_animations=self.skip_animations)
@@ -65,9 +70,30 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
         for flat_grid_index in range(len(cartesian_pixel_grid)):
             coordinate_swap_animations.append(ReplacementTransform(cartesian_pixel_grid[flat_grid_index],
                                                                    isometric_pixel_grid[flat_grid_index]))
+        isometric_neuron = neuron_groups[0][0].neuron
+        neuron_groups[0][0].neuron_animation_created = True
         coordinate_swap_animations.append(ReplacementTransform(cartesian_neuron, isometric_neuron))
+        isometric_neuron_kernel = neuron_groups[0][0].kernel
+        neuron_groups[0][0].kernel_animation_created = True
         coordinate_swap_animations.append(ReplacementTransform(cartesian_neuron_kernel, isometric_neuron_kernel))
         self.play(*coordinate_swap_animations)
+
+        self.next_section(skip_animations=self.skip_animations)
+        neuron_animation = neuron_groups[0][1].create_neuron_animation()
+        kernel_animation = neuron_groups[0][1].create_kernel_animation()
+        self.play(neuron_animation)
+        self.play(kernel_animation)
+
+        self.next_section(skip_animations=self.skip_animations)
+        section_animations = []
+        for y_index in range(len(neuron_groups)):
+            for x_index in range(len(neuron_groups[y_index])):
+                neuron_group = neuron_groups[y_index][x_index]
+                if not neuron_group.neuron_animation_created:
+                    section_animations.append(neuron_group.create_neuron_animation())
+                if not neuron_group.kernel_animation_created:
+                    section_animations.append(neuron_group.create_kernel_animation())
+        self.play(LaggedStart(*section_animations, lag_ratio=0.02))
 
         self.next_section(skip_animations=self.skip_animations)
         self.wait(1)
@@ -131,7 +157,7 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
         return circle
 
     def create_neuron(self, position) -> Circle:
-        circle = Circle(radius=self.neuron_radius, color=RED, fill_color=RED, fill_opacity=1.0)
+        circle = Circle(radius=self.neuron_radius, stroke_color=BLACK, fill_color=RED, fill_opacity=1.0)
         circle.move_to(position)
         return circle
 
@@ -160,6 +186,23 @@ class IsometricNeuronsLookingAtPixelsScene(Scene):
             polygon_positions = self.from_cartesian_position_to_isometric_position(polygon_positions)
         polygon = Polygon(*polygon_positions, color=RED, fill_color=RED, fill_opacity=0.5, stroke_opacity=0.0)
         return polygon
+
+
+class NeuronGroup:
+    def __init__(self, scene: IsometricNeuronsLookingAtPixelsScene, pixel_x_index: float, pixel_y_index: float):
+        self.neuron: Circle = scene.create_neuron_above_pixel_position(pixel_x_index, pixel_y_index)
+        self.neuron_animation_created: bool = False
+        self.kernel: Polygon = scene.create_neuron_kernel_centered_on_pixel_index(pixel_x_index, pixel_y_index)
+        self.kernel_animation_created: bool = False
+
+    def create_neuron_animation(self) -> Animation:
+        self.neuron_animation_created = True
+        return FadeIn(self.neuron, shift=DOWN)
+
+    def create_kernel_animation(self) -> Animation:
+        self.kernel_animation_created = True
+        return FadeIn(self.kernel, shift=DOWN)
+
 
 
 if __name__ == '__main__':
