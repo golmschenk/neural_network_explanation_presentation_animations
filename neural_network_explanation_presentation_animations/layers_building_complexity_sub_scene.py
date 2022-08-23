@@ -1,14 +1,17 @@
-from typing import List
+from typing import List, Union
 
 import numpy as np
-from manim import Polygon, Line, Circle, BLACK, RED, VGroup, RIGHT, RoundedRectangle, LEFT
+from colour import Color
+from manim import Polygon, Line, Circle, BLACK, RED, VGroup, RIGHT, RoundedRectangle, LEFT, BLUE, DOWN, GRAY, WHITE, \
+    DARK_GRAY, LIGHT_GRAY, GREEN
 
 
 class PixelGridSquare:
-    def __init__(self, number_of_pixels: int):
+    def __init__(self, number_of_pixels: int, color_array: np.ndarray):
         self.grid_size: float = 3 * 0.4
         self.number_of_pixels = number_of_pixels
         self.pixel_size = self.grid_size / self.number_of_pixels
+        assert color_array.shape == (number_of_pixels, number_of_pixels)
         self.v_group: VGroup = VGroup()
         polygon_list_list: List[List[Polygon]] = []
         for pixel_y_index in range(number_of_pixels):
@@ -23,11 +26,12 @@ class PixelGridSquare:
                     [right, bottom, 0],
                     [left, bottom, 0],
                 ]
-                polygon = Polygon(*polygon_vertexes, color=BLACK)
+                polygon = Polygon(*polygon_vertexes, stroke_color=BLACK,
+                                  fill_color=color_array[pixel_y_index, pixel_x_index], fill_opacity=1.0)
                 polygon_list.append(polygon)
                 self.v_group.add(polygon)
             polygon_list_list.append(polygon_list)
-        self.polygon_array: np.ndarray = np.array(polygon_list_list)
+        self.polygon_array: np.ndarray = np.array(polygon_list_list).squeeze()
 
     def pixel_index_to_pixel_start_cartesian_xy(self, pixel_x_index: float, pixel_y_index: float) -> (float, float):
         cartesian_x_position = (-self.grid_size / 2) + (pixel_x_index * self.pixel_size)
@@ -36,18 +40,25 @@ class PixelGridSquare:
 
 
 class NeuronWithKernel:
-    def __init__(self):
+    def __init__(self, neuron_color: Union[Color, str], color_array: np.ndarray):
         self.neuron_radius: float = 0.2
-        self.kernel: PixelGridSquare = PixelGridSquare(number_of_pixels=3)
+        self.kernel: PixelGridSquare = PixelGridSquare(number_of_pixels=3, color_array=color_array)
         neuron_to_grid_distance = self.kernel.grid_size - self.neuron_radius
         self.indicator_lines: VGroup = VGroup(
-            Line(np.array([0, 0, -1]), np.array([-neuron_to_grid_distance, self.kernel.grid_size / 2, -1]), stroke_color=BLACK),
-            Line(np.array([0, 0, -1]), np.array([-neuron_to_grid_distance, -self.kernel.grid_size / 2, -1]), stroke_color=BLACK)
+            self.create_indicator_line(np.array([0, 0, -1]),
+                                       np.array([-neuron_to_grid_distance, self.kernel.grid_size / 2, -1])),
+            self.create_indicator_line(np.array([0, 0, -1]),
+                                       np.array([-neuron_to_grid_distance, -self.kernel.grid_size / 2, -1]))
         )
-        self.neuron: Circle = Circle(radius=self.neuron_radius, stroke_color=BLACK, fill_color=RED, fill_opacity=1.0)
+        self.neuron: Circle = Circle(radius=self.neuron_radius, stroke_color=BLACK, fill_color=neuron_color,
+                                     fill_opacity=1.0)
         neuron_plus_indicator_lines_v_group: VGroup = VGroup(self.neuron, self.indicator_lines)
         neuron_plus_indicator_lines_v_group.next_to(self.kernel.v_group, direction=RIGHT, buff=0)
         self.v_group = VGroup(self.kernel.v_group, self.indicator_lines, self.neuron)
+
+    @staticmethod
+    def create_indicator_line(start_position: np.ndarray, end_position: np.ndarray) -> Line:
+        return Line(start_position, end_position, stroke_color=BLACK)
 
 
 class LayerBuildingComplexitySubScene:
@@ -59,6 +70,30 @@ class LayerBuildingComplexitySubScene:
         self.layer_margin: float = 0.6
         self.layer_height = 2 * self.display_half_y_size - 2 * self.display_y_margin
         self.layer_width = (2 * self.display_half_x_size - 2 * self.layer_margin - 2 * self.display_x_margin) / 3
+        gradient_layer, line_layer, corner_layer = self.create_layers()
+        self.gradient_layer: RoundedRectangle = gradient_layer
+        self.line_layer: RoundedRectangle = line_layer
+        self.corner_layer: RoundedRectangle = corner_layer
+        dark_to_light_gradient_neuron_color = RED
+        light_to_dark_gradient_neuron_color = BLUE
+        self.dark_to_light_gradient_neuron: NeuronWithKernel = NeuronWithKernel(
+            dark_to_light_gradient_neuron_color, np.array([[DARK_GRAY, LIGHT_GRAY, WHITE],
+                                                           [DARK_GRAY, LIGHT_GRAY, WHITE],
+                                                           [DARK_GRAY, LIGHT_GRAY, WHITE]]))
+        self.dark_to_light_gradient_neuron.v_group.move_to(self.gradient_layer)
+        self.light_to_dark_gradient_neuron: NeuronWithKernel = NeuronWithKernel(
+            light_to_dark_gradient_neuron_color, np.array([[WHITE, LIGHT_GRAY, DARK_GRAY],
+                                                           [WHITE, LIGHT_GRAY, DARK_GRAY],
+                                                           [WHITE, LIGHT_GRAY, DARK_GRAY]]))
+        self.light_to_dark_gradient_neuron.v_group.next_to(self.dark_to_light_gradient_neuron.v_group, direction=DOWN,
+                                                           buff=self.layer_height / 10)
+        vertical_line_neuron_color = GREEN
+        self.vertical_line_neuron: NeuronWithKernel = NeuronWithKernel(
+            vertical_line_neuron_color,
+            np.array([[WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color],
+                      [WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color],
+                      [WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color]]))
+        self.vertical_line_neuron.v_group.move_to(self.line_layer)
 
     def create_layers(self) -> (RoundedRectangle, RoundedRectangle, RoundedRectangle):
         gradient_layer = self.create_layer_rectangle()
