@@ -4,19 +4,21 @@ from typing import List, Union
 
 import numpy as np
 from manim import Scene, config, ImageMobject, FadeTransform, Mobject, Polygon, FadeOut, FadeIn, ReplacementTransform, \
-    BLACK
+    BLACK, Circle, RED, DOWN, IN
 
 
-class ThreeDNeuronsLookingAtPixelsScene(Scene):
+class IsometricNeuronsLookingAtPixelsScene(Scene):
     def __init__(self):
         self.image_large_size = 6.0
         self.number_of_pixels = 10
         assert self.number_of_pixels % 2 == 0
         self.pixel_size = self.image_large_size / self.number_of_pixels
         self.skip_animations = False
-        self.isometric_theta = math.tau / 8
+        self.isometric_theta = -math.tau / 8
         self.isometric_scale = 0.5
-        self.isometric_shift = [0, -1, 0]
+        self.isometric_y_base_shift = -1
+        self.isometric_y_per_z_shift = 1
+        self.neuron_radius = self.pixel_size * 0.4
         super().__init__()
 
     def construct(self):
@@ -47,31 +49,39 @@ class ThreeDNeuronsLookingAtPixelsScene(Scene):
         self.play(FadeOut(planetary_nebula_image_mobject), FadeIn(*cartesian_pixel_grid))
 
         self.next_section(skip_animations=self.skip_animations)
-        grid_swap_animations = []
+        cartesian_neuron_position = self.pixel_index_to_pixel_center_cartesian_xy(pixel_x_index=1, pixel_y_index=1)
+        cartesian_neuron = self.create_neuron([cartesian_neuron_position[0], cartesian_neuron_position[1], 1])
+        isometric_neuron = self.create_neuron_above_pixel_position(pixel_x_index=1, pixel_y_index=1)
+        self.play(FadeIn(cartesian_neuron, shift=IN))
+
+        self.next_section(skip_animations=self.skip_animations)
+        coordinate_swap_animations = []
         for flat_grid_index in range(len(cartesian_pixel_grid)):
-            grid_swap_animations.append(ReplacementTransform(cartesian_pixel_grid[flat_grid_index],
-                                                             isometric_pixel_grid[flat_grid_index]))
-        self.play(*grid_swap_animations)
+            coordinate_swap_animations.append(ReplacementTransform(cartesian_pixel_grid[flat_grid_index],
+                                                                   isometric_pixel_grid[flat_grid_index]))
+        coordinate_swap_animations.append(ReplacementTransform(cartesian_neuron, isometric_neuron))
+        self.play(*coordinate_swap_animations)
         self.wait(1)
 
         self.next_section(skip_animations=self.skip_animations)
         self.wait(1)
 
-    def pixel_index_to_pixel_center_cartesian_xy(self, pixel_x_index, pixel_y_index) -> (float, float):
+    def pixel_index_to_pixel_center_cartesian_xy(self, pixel_x_index: int, pixel_y_index: int) -> (float, float):
         cartesian_x_position = (-self.image_large_size / 2) + (self.pixel_size / 2) + (pixel_x_index * self.pixel_size)
         cartesian_y_position = (self.image_large_size / 2) - (self.pixel_size / 2) - (pixel_y_index * self.pixel_size)
         return cartesian_x_position, cartesian_y_position
 
-    def pixel_index_to_pixel_start_cartesian_xy(self, pixel_x_index, pixel_y_index) -> (float, float):
+    def pixel_index_to_pixel_start_cartesian_xy(self, pixel_x_index: int, pixel_y_index: int) -> (float, float):
         cartesian_x_position = (-self.image_large_size / 2) + (pixel_x_index * self.pixel_size)
         cartesian_y_position = (self.image_large_size / 2) - (pixel_y_index * self.pixel_size)
         return cartesian_x_position, cartesian_y_position
 
-    def pixel_index_to_pixel_start_isometric_position(self, pixel_x_index, pixel_y_index) -> np.ndarray:
+    def pixel_index_to_pixel_start_isometric_position(self, pixel_x_index: int, pixel_y_index: int,
+                                                      z_position: float = 0) -> np.ndarray:
         cartesian_x_position = (-self.image_large_size / 2) + (pixel_x_index * self.pixel_size)
         cartesian_y_position = (self.image_large_size / 2) - (pixel_y_index * self.pixel_size)
         isometric_position = self.from_cartesian_position_to_isometric_position(
-            np.array([cartesian_x_position, cartesian_y_position, 0]))
+            np.array([cartesian_x_position, cartesian_y_position, z_position]))
         return isometric_position
 
     def from_cartesian_position_to_isometric_position(self, cartesian_position: np.ndarray) -> np.ndarray:
@@ -87,19 +97,45 @@ class ThreeDNeuronsLookingAtPixelsScene(Scene):
         if len(cartesian_position.shape) == 1:
             non_shifted_isometric_xy_position = np.array([rotated_position[0],
                                                           rotated_position[1] * self.isometric_scale])
-            non_shifted_isometric_position = np.stack([non_shifted_isometric_xy_position,
-                                                       cartesian_z_position], axis=0)
+            non_shifted_isometric_position = np.concatenate([non_shifted_isometric_xy_position,
+                                                             cartesian_z_position], axis=0)
+            isometric_position = non_shifted_isometric_position
+            y_shift = self.isometric_y_base_shift + (isometric_position[2] * self.isometric_y_per_z_shift)
+            isometric_position[1] += y_shift
         else:
             non_shifted_isometric_xy_position = np.stack([rotated_position[:, 0],
                                                           rotated_position[:, 1] * self.isometric_scale], axis=1)
             non_shifted_isometric_position = np.concatenate([non_shifted_isometric_xy_position,
                                                              cartesian_z_position], axis=1)
-        isometric_position = non_shifted_isometric_position + self.isometric_shift
+            isometric_position = non_shifted_isometric_position
+            y_shift = self.isometric_y_base_shift + (isometric_position[:, 2] * self.isometric_y_per_z_shift)
+            isometric_position[:, 1] += y_shift
         return isometric_position
 
     def create_pixel_grid_polygon(self, vertexes: Union[np.ndarray, List[List[float]]]) -> Polygon:
         polygon = Polygon(*vertexes, color=BLACK)
         return polygon
+
+    def create_neuron_above_pixel_position(self, pixel_x_index, pixel_y_index) -> Circle:
+        isometric_position = self.pixel_index_to_pixel_start_isometric_position(pixel_x_index + 0.5,
+                                                                                pixel_y_index + 0.5,
+                                                                                z_position=1)
+        isometric_position[2] = 1  # Z position for occlusions.
+        circle = self.create_neuron(position=isometric_position)
+        return circle
+
+    def create_neuron(self, position) -> Circle:
+        circle = Circle(radius=self.neuron_radius, color=RED, fill_color=RED, fill_opacity=1.0)
+        circle.move_to(position)
+        return circle
+
+    def create_neuron_kernel_centered_on_pixel_position(self, pixel_x_index, pixel_y_index) -> Circle:
+        isometric_position = self.pixel_index_to_pixel_start_isometric_position(pixel_x_index + 0.5,
+                                                                                pixel_y_index + 0.5,
+                                                                                z_position=1)
+        isometric_position[2] = 1  # Z position for occlusions.
+        circle = self.create_neuron(position=isometric_position)
+        return circle
 
 
 if __name__ == '__main__':
@@ -107,4 +143,4 @@ if __name__ == '__main__':
     config.movie_file_extension = '.mov'
     config.save_sections = True
     config.quality = 'low_quality'
-    ThreeDNeuronsLookingAtPixelsScene().render(preview=True)
+    IsometricNeuronsLookingAtPixelsScene().render(preview=True)
