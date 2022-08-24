@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Union
 
 import numpy as np
-from manim import ImageMobject, Mobject, Polygon, FadeIn, BLACK, Circle, RED, DOWN, Animation, UP
+from manim import ImageMobject, Mobject, Polygon, FadeIn, BLACK, Circle, RED, DOWN, Animation, UP, VGroup
 
 
 class IsometricNeuronsLookingAtPixelsSubScene:
@@ -20,6 +20,14 @@ class IsometricNeuronsLookingAtPixelsSubScene:
         self.isometric_y_base_shift = -1
         self.isometric_y_per_z_shift = 1
         self.neuron_radius = self.pixel_size * 0.4
+        self.v_group = VGroup()
+
+        self.planetary_nebula_image_mobject = self.create_image()
+
+        self.cartesian_pixel_grid, self.isometric_pixel_grid, self.neuron_groups = self.create_grids_and_neuron_groups()
+
+        self.cartesian_neuron, self.cartesian_neuron_kernel = self.create_cartesian_neuron_collection()
+        self.v_group.add(self.cartesian_neuron, self.cartesian_neuron_kernel)
         super().__init__()
 
     def create_cartesian_neuron_collection(self):
@@ -48,12 +56,17 @@ class IsometricNeuronsLookingAtPixelsSubScene:
                 ]
                 polygon_isometric_positions = self.from_cartesian_position_to_isometric_position(
                     np.array(polygon_cartesian_positions))
-                cartesian_pixel_grid.append(self.create_pixel_grid_polygon(polygon_cartesian_positions))
-                isometric_pixel_grid.append(self.create_pixel_grid_polygon(polygon_isometric_positions))
+                cartesian_polygon = self.create_pixel_grid_polygon(polygon_cartesian_positions)
+                cartesian_pixel_grid.append(cartesian_polygon)
+                self.v_group.add(cartesian_polygon)
+                isometric_polygon = self.create_pixel_grid_polygon(polygon_isometric_positions)
+                isometric_pixel_grid.append(isometric_polygon)
+                self.v_group.add(isometric_polygon)
                 if (pixel_x_index != 0 and pixel_x_index != self.number_of_pixels - 1 and
                         pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1):
                     neuron_group = NeuronGroup(self, pixel_x_index, pixel_y_index)
                     neuron_groups[pixel_y_index - 1].append(neuron_group)
+                    self.v_group.add(neuron_group.v_group)
         return cartesian_pixel_grid, isometric_pixel_grid, neuron_groups
 
     def create_image(self) -> ImageMobject:
@@ -192,6 +205,7 @@ class NeuronGroup:
         self.output_animation_created: bool = False
         self.cartesian_output: Polygon = scene.create_neuron_output_centered_on_pixel_index(
             pixel_x_index, pixel_y_index, isometric=False)
+        self.v_group = VGroup(self.neuron, self.kernel, self.output, self.cartesian_output)
 
     def create_neuron_animation(self) -> Animation:
         self.neuron_animation_created = True
