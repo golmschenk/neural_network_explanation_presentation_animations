@@ -42,7 +42,21 @@ class MainScene(Scene):
         coordinate_swap_animations.append(ReplacementTransform(self.isometric_neurons_looking_at_pixels_sub_scene.cartesian_neuron_kernel, isometric_neuron_kernel))
         self.play(*coordinate_swap_animations)
 
+        self.next_section()
+        isometric_neuron_copy = isometric_neuron.copy()
+        isometric_neuron_kernel_copy = isometric_neuron_kernel.copy()
+        self.add(isometric_neuron_copy, isometric_neuron_kernel_copy)
+        self.remove(isometric_neuron, isometric_neuron_kernel)
+        self.play(FadeOut(self.isometric_neurons_looking_at_pixels_sub_scene.isometric_pixel_grid_v_group))
+
+        self.layers_building_complexity_sub_scene.create_sections(scene=self, transition_neuron=isometric_neuron_copy,
+                                                                  transition_kernel=isometric_neuron_kernel_copy)
+
+
         self.next_section(skip_animations=self.skip_animations)
+        # Hacky go back to old scene.
+        self.add(isometric_neuron, isometric_neuron_kernel)
+        self.add(self.isometric_neurons_looking_at_pixels_sub_scene.isometric_pixel_grid_v_group)
         neuron_animation = self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups[0][1].create_neuron_animation()
         kernel_animation = self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups[0][1].create_kernel_animation()
         self.play(neuron_animation)
@@ -67,6 +81,9 @@ class MainScene(Scene):
                 if not neuron_group.output_animation_created:
                     section_animations.append(neuron_group.create_output_animation())
         self.play(LaggedStart(*section_animations, lag_ratio=0.01))
+
+        self.play(FadeOut(self.isometric_neurons_looking_at_pixels_sub_scene.isometric_pixel_grid_v_group,
+                          self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups_v_group))
 
         self.next_section(skip_animations=self.skip_animations)
         self.wait(1)

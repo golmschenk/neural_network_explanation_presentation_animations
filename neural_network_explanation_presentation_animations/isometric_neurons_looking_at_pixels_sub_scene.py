@@ -20,6 +20,9 @@ class IsometricNeuronsLookingAtPixelsSubScene:
         self.isometric_y_base_shift = -1
         self.isometric_y_per_z_shift = 1
         self.neuron_radius = self.pixel_size * 0.4
+        self.cartesian_pixel_grid_v_group = VGroup()
+        self.isometric_pixel_grid_v_group = VGroup()
+        self.neuron_groups_v_group = VGroup()
         self.v_group = VGroup()
 
         self.planetary_nebula_image_mobject = self.create_image()
@@ -59,14 +62,17 @@ class IsometricNeuronsLookingAtPixelsSubScene:
                 cartesian_polygon = self.create_pixel_grid_polygon(polygon_cartesian_positions)
                 cartesian_pixel_grid.append(cartesian_polygon)
                 self.v_group.add(cartesian_polygon)
+                self.cartesian_pixel_grid_v_group.add(cartesian_polygon)
                 isometric_polygon = self.create_pixel_grid_polygon(polygon_isometric_positions)
                 isometric_pixel_grid.append(isometric_polygon)
                 self.v_group.add(isometric_polygon)
+                self.isometric_pixel_grid_v_group.add(isometric_polygon)
                 if (pixel_x_index != 0 and pixel_x_index != self.number_of_pixels - 1 and
                         pixel_y_index != 0 and pixel_y_index != self.number_of_pixels - 1):
                     neuron_group = NeuronGroup(self, pixel_x_index, pixel_y_index)
                     neuron_groups[pixel_y_index - 1].append(neuron_group)
                     self.v_group.add(neuron_group.v_group)
+                    self.neuron_groups_v_group.add(neuron_group.v_group)
         return cartesian_pixel_grid, isometric_pixel_grid, neuron_groups
 
     def create_image(self) -> ImageMobject:
@@ -205,7 +211,7 @@ class NeuronGroup:
         self.output_animation_created: bool = False
         self.cartesian_output: Polygon = scene.create_neuron_output_centered_on_pixel_index(
             pixel_x_index, pixel_y_index, isometric=False)
-        self.v_group = VGroup(self.neuron, self.kernel, self.output, self.cartesian_output)
+        self.v_group = VGroup(self.neuron, self.kernel, self.output)
 
     def create_neuron_animation(self) -> Animation:
         self.neuron_animation_created = True

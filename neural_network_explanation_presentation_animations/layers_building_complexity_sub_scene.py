@@ -3,7 +3,7 @@ from typing import List, Union
 import numpy as np
 from colour import Color
 from manim import Polygon, Line, Circle, BLACK, RED, VGroup, RIGHT, RoundedRectangle, LEFT, BLUE, DOWN, GRAY, WHITE, \
-    DARK_GRAY, LIGHT_GRAY, GREEN, YELLOW, UP, Arrow
+    DARK_GRAY, LIGHT_GRAY, GREEN, YELLOW, UP, Arrow, rgba_to_color, Scene, ReplacementTransform, Create, FadeIn, FadeOut
 
 
 class PixelGridSquare:
@@ -58,7 +58,7 @@ class NeuronWithKernel:
 
     @staticmethod
     def create_indicator_line(start_position: np.ndarray, end_position: np.ndarray) -> Line:
-        return Line(start_position, end_position, stroke_color=BLACK)
+        return Line(start_position, end_position, stroke_color=BLACK, z_index=-1)
 
 
 class LayerBuildingComplexitySubScene:
@@ -149,6 +149,48 @@ class LayerBuildingComplexitySubScene:
                                                                  direction=UP, buff=self.layer_height / 10)
         self.v_group.add(self.corner_in_original_image_pixel_grid.v_group)
 
+    def create_sections(self, scene: Scene, transition_neuron: Circle, transition_kernel: Polygon):
+        scene.next_section()
+        scene.play(ReplacementTransform(transition_neuron, VGroup(self.dark_to_light_gradient_neuron.neuron, self.dark_to_light_gradient_neuron.indicator_lines)),
+                   ReplacementTransform(transition_kernel, self.dark_to_light_gradient_neuron.kernel.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.gradient_layer))
+
+        scene.next_section()
+        scene.play(FadeIn(self.light_to_dark_gradient_neuron.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.gradient_layer_to_line_layer_arrow, self.line_layer))
+
+        scene.next_section()
+        scene.play(FadeIn(self.vertical_line_neuron.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group))
+
+        scene.next_section()
+        scene.play(FadeOut(self.vertical_line_in_original_image_pixel_grid.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.horizontal_line_neuron.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.line_layer_to_corner_layer_arrow, self.corner_layer))
+
+        scene.next_section()
+        scene.play(FadeIn(self.corner_neuron_kernel.v_group))
+
+        scene.next_section()
+        scene.play(FadeIn(self.corner_in_original_image_pixel_grid.v_group))
+
+        scene.next_section()
+        scene.remove(self.dark_to_light_gradient_neuron.v_group)  # Hacky remove all.
+        scene.wait(1)
+
     def create_layers(self) -> (RoundedRectangle, RoundedRectangle, RoundedRectangle):
         gradient_layer = self.create_layer_rectangle()
         line_layer = self.create_layer_rectangle()
@@ -158,4 +200,6 @@ class LayerBuildingComplexitySubScene:
         return gradient_layer, line_layer, corner_layer
 
     def create_layer_rectangle(self) -> RoundedRectangle:
-        return RoundedRectangle(width=self.layer_width, height=self.layer_height, corner_radius=0.3, stroke_color=BLACK)
+        return RoundedRectangle(width=self.layer_width, height=self.layer_height, corner_radius=0.3, stroke_color=BLACK,
+                                fill_color=rgba_to_color([224 / 255, 234 / 255, 246 / 255, 1.0]), fill_opacity=1.0, z_index=-2)
+
