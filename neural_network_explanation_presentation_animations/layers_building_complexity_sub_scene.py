@@ -3,7 +3,8 @@ from typing import List, Union
 import numpy as np
 from colour import Color
 from manim import Polygon, Line, Circle, BLACK, RED, VGroup, RIGHT, RoundedRectangle, LEFT, BLUE, DOWN, GRAY, WHITE, \
-    DARK_GRAY, LIGHT_GRAY, GREEN, YELLOW, UP, Arrow, rgba_to_color, Scene, ReplacementTransform, Create, FadeIn, FadeOut
+    DARK_GRAY, LIGHT_GRAY, GREEN, YELLOW, UP, Arrow, rgba_to_color, Scene, ReplacementTransform, Create, FadeIn, \
+    FadeOut, DoubleArrow
 
 
 class PixelGridSquare:
@@ -129,6 +130,11 @@ class LayerBuildingComplexitySubScene:
         self.vertical_line_in_original_image_pixel_grid.v_group.next_to(self.vertical_line_neuron.kernel.v_group,
                                                                         direction=UP, buff=self.layer_height / 10)
         self.v_group.add(self.vertical_line_in_original_image_pixel_grid.v_group)
+        self.vertical_line_representation_arrow: DoubleArrow = DoubleArrow(
+            self.vertical_line_neuron.kernel.v_group.get_top(),
+            self.vertical_line_in_original_image_pixel_grid.v_group.get_bottom(), buff=0.0, stroke_color=BLACK,
+            fill_color=BLACK)
+        self.v_group.add(self.vertical_line_representation_arrow)
         self.corner_neuron_kernel: PixelGridSquare = PixelGridSquare(
             number_of_pixels=3,
             color_array=np.array([[WHITE, horizontal_line_neuron_color, horizontal_line_neuron_color],
@@ -148,10 +154,16 @@ class LayerBuildingComplexitySubScene:
         self.corner_in_original_image_pixel_grid.v_group.next_to(self.corner_neuron_kernel.v_group,
                                                                  direction=UP, buff=self.layer_height / 10)
         self.v_group.add(self.corner_in_original_image_pixel_grid.v_group)
+        self.corner_representation_arrow: DoubleArrow = DoubleArrow(
+            self.corner_neuron_kernel.v_group.get_top(),
+            self.corner_in_original_image_pixel_grid.v_group.get_bottom(), buff=0.0, stroke_color=BLACK,
+            fill_color=BLACK)
+        self.v_group.add(self.corner_representation_arrow)
 
     def create_sections(self, scene: Scene, transition_neuron: Circle, transition_kernel: Polygon):
         scene.next_section()
-        scene.play(ReplacementTransform(transition_neuron, VGroup(self.dark_to_light_gradient_neuron.neuron, self.dark_to_light_gradient_neuron.indicator_lines)),
+        scene.play(ReplacementTransform(transition_neuron, VGroup(self.dark_to_light_gradient_neuron.neuron,
+                                                                  self.dark_to_light_gradient_neuron.indicator_lines)),
                    ReplacementTransform(transition_kernel, self.dark_to_light_gradient_neuron.kernel.v_group))
 
         scene.next_section()
@@ -167,13 +179,16 @@ class LayerBuildingComplexitySubScene:
         scene.play(FadeIn(self.vertical_line_neuron.v_group))
 
         scene.next_section()
-        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group))
+        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group,
+                          self.vertical_line_representation_arrow))
 
         scene.next_section()
-        scene.play(FadeOut(self.vertical_line_in_original_image_pixel_grid.v_group))
+        scene.play(FadeOut(self.vertical_line_in_original_image_pixel_grid.v_group,
+                           self.vertical_line_representation_arrow))
 
         scene.next_section()
-        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group))
+        scene.play(FadeIn(self.vertical_line_in_original_image_pixel_grid.v_group,
+                          self.vertical_line_representation_arrow))
 
         scene.next_section()
         scene.play(FadeIn(self.horizontal_line_neuron.v_group))
@@ -185,7 +200,7 @@ class LayerBuildingComplexitySubScene:
         scene.play(FadeIn(self.corner_neuron_kernel.v_group))
 
         scene.next_section()
-        scene.play(FadeIn(self.corner_in_original_image_pixel_grid.v_group))
+        scene.play(FadeIn(self.corner_in_original_image_pixel_grid.v_group, self.corner_representation_arrow))
 
         scene.next_section()
         scene.remove(self.dark_to_light_gradient_neuron.v_group)  # Hacky remove all.
@@ -201,5 +216,5 @@ class LayerBuildingComplexitySubScene:
 
     def create_layer_rectangle(self) -> RoundedRectangle:
         return RoundedRectangle(width=self.layer_width, height=self.layer_height, corner_radius=0.3, stroke_color=BLACK,
-                                fill_color=rgba_to_color([224 / 255, 234 / 255, 246 / 255, 1.0]), fill_opacity=1.0, z_index=-2)
-
+                                fill_color=rgba_to_color([224 / 255, 234 / 255, 246 / 255, 1.0]), fill_opacity=1.0,
+                                z_index=-2)
