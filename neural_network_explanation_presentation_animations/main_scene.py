@@ -1,10 +1,11 @@
-from manim import Scene, LaggedStart, ReplacementTransform, FadeIn, IN, FadeOut
+from manim import Scene, LaggedStart, ReplacementTransform, FadeIn, IN, FadeOut, VGroup
 
 from neural_network_explanation_presentation_animations.configuration import set_up_configuration
 from neural_network_explanation_presentation_animations.isometric_neurons_looking_at_pixels_sub_scene import \
     IsometricNeuronsLookingAtPixelsSubScene
 from neural_network_explanation_presentation_animations.layers_building_complexity_sub_scene import \
     LayerBuildingComplexitySubScene
+from neural_network_explanation_presentation_animations.mobject_set_operations import mobjects_from_v_group
 
 
 class MainScene(Scene):
@@ -13,10 +14,12 @@ class MainScene(Scene):
         self.isometric_neurons_looking_at_pixels_sub_scene: IsometricNeuronsLookingAtPixelsSubScene = \
             IsometricNeuronsLookingAtPixelsSubScene()
         self.layers_building_complexity_sub_scene: LayerBuildingComplexitySubScene = LayerBuildingComplexitySubScene()
+        self.skip_animations = False
 
     def construct(self):
         self.next_section(skip_animations=self.skip_animations)
         self.add(self.isometric_neurons_looking_at_pixels_sub_scene.planetary_nebula_image_mobject)
+        self.wait(1)
 
         self.next_section(skip_animations=self.skip_animations)
         self.play(FadeOut(self.isometric_neurons_looking_at_pixels_sub_scene.planetary_nebula_image_mobject),
@@ -47,7 +50,9 @@ class MainScene(Scene):
         isometric_neuron_kernel_copy = isometric_neuron_kernel.copy()
         self.add(isometric_neuron_copy, isometric_neuron_kernel_copy)
         self.remove(isometric_neuron, isometric_neuron_kernel)
-        self.play(FadeOut(self.isometric_neurons_looking_at_pixels_sub_scene.isometric_pixel_grid_v_group))
+        in_scene_isometric_sub_scene_mobjects = list(
+            set(mobjects_from_v_group(self.isometric_neurons_looking_at_pixels_sub_scene.v_group)) & set(self.mobjects))
+        self.play(FadeOut(*in_scene_isometric_sub_scene_mobjects))
 
         self.layers_building_complexity_sub_scene.create_sections(scene=self, transition_neuron=isometric_neuron_copy,
                                                                   transition_kernel=isometric_neuron_kernel_copy)
@@ -82,6 +87,7 @@ class MainScene(Scene):
                     section_animations.append(neuron_group.create_output_animation())
         self.play(LaggedStart(*section_animations, lag_ratio=0.01))
 
+        self.next_section(skip_animations=self.skip_animations)
         self.play(FadeOut(self.isometric_neurons_looking_at_pixels_sub_scene.isometric_pixel_grid_v_group,
                           self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups_v_group))
 
