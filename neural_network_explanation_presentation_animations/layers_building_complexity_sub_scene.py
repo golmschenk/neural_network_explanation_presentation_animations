@@ -160,20 +160,13 @@ class LayerBuildingComplexitySubScene:
             fill_color=BLACK)
         self.v_group.add(self.corner_representation_arrow)
 
-    def create_sections(self, scene: Scene, transition_neuron: Circle, transition_kernel: Polygon):
-        scene.next_section()
-        scene.play(ReplacementTransform(transition_neuron, VGroup(self.dark_to_light_gradient_neuron.neuron,
-                                                                  self.dark_to_light_gradient_neuron.indicator_lines)),
-                   ReplacementTransform(transition_kernel, self.dark_to_light_gradient_neuron.kernel.v_group))
-
-        scene.next_section()
-        scene.play(FadeIn(self.gradient_layer))
+    def create_later_sections(self, scene: Scene):
 
         scene.next_section()
         scene.play(FadeIn(self.light_to_dark_gradient_neuron.v_group))
 
         scene.next_section()
-        scene.play(FadeIn(self.gradient_layer_to_line_layer_arrow, self.line_layer))
+        scene.play(FadeIn(self.line_layer))
 
         scene.next_section()
         scene.play(FadeIn(self.vertical_line_neuron.v_group))
