@@ -1,22 +1,30 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy as np
 from colour import Color
 from manim import Polygon, Line, Circle, BLACK, RED, VGroup, RIGHT, RoundedRectangle, LEFT, BLUE, DOWN, GRAY, WHITE, \
     DARK_GRAY, LIGHT_GRAY, GREEN, YELLOW, UP, Arrow, rgba_to_color, Scene, ReplacementTransform, Create, FadeIn, \
-    FadeOut, DoubleArrow
+    FadeOut, DoubleArrow, Text
+
+
+def create_faded_text(neuron_text):
+    return Text(neuron_text, fill_color=BLACK, fill_opacity=0.3, font_size=24, font='JetBrainsMono-Regular.ttf')
 
 
 class PixelGridSquare:
-    def __init__(self, number_of_pixels: int, color_array: np.ndarray):
+    def __init__(self, number_of_pixels: int, color_array: np.ndarray, text_array: Optional[np.ndarray] = None):
+        if text_array is None:
+            text_array = np.full(shape=[number_of_pixels, number_of_pixels], fill_value='')
         self.grid_size: float = 3 * 0.4
         self.number_of_pixels = number_of_pixels
         self.pixel_size = self.grid_size / self.number_of_pixels
         assert color_array.shape == (number_of_pixels, number_of_pixels)
         self.v_group: VGroup = VGroup()
         polygon_list_list: List[List[Polygon]] = []
+        text_list_list: List[List[Text]] = []
         for pixel_y_index in range(number_of_pixels):
             polygon_list: List[Polygon] = []
+            text_list: List[Text] = []
             for pixel_x_index in range(number_of_pixels):
                 left, top = self.pixel_index_to_pixel_start_cartesian_xy(pixel_x_index, pixel_y_index)
                 right = left + self.pixel_size
@@ -31,8 +39,14 @@ class PixelGridSquare:
                                   fill_color=color_array[pixel_y_index, pixel_x_index], fill_opacity=1.0)
                 polygon_list.append(polygon)
                 self.v_group.add(polygon)
+                text = create_faded_text(str(text_array[pixel_y_index, pixel_x_index]))
+                text.move_to(polygon.get_center())
+                text_list.append(text)
+                self.v_group.add(text)
+            text_list_list.append(text_list)
             polygon_list_list.append(polygon_list)
         self.polygon_array: np.ndarray = np.array(polygon_list_list).squeeze()
+        self.text_array: np.ndarray = np.array(text_list_list).squeeze()
 
     def pixel_index_to_pixel_start_cartesian_xy(self, pixel_x_index: float, pixel_y_index: float) -> (float, float):
         cartesian_x_position = (-self.grid_size / 2) + (pixel_x_index * self.pixel_size)
@@ -41,9 +55,11 @@ class PixelGridSquare:
 
 
 class NeuronWithKernel:
-    def __init__(self, neuron_color: Union[Color, str], color_array: np.ndarray, number_of_pixels: int = 3):
+    def __init__(self, neuron_color: Union[Color, str], neuron_text: str, color_array: np.ndarray,
+                 text_array: Optional[np.ndarray] = None, number_of_pixels: int = 3):
         self.neuron_radius: float = 0.2
-        self.kernel: PixelGridSquare = PixelGridSquare(number_of_pixels=number_of_pixels, color_array=color_array)
+        self.kernel: PixelGridSquare = PixelGridSquare(number_of_pixels=number_of_pixels, color_array=color_array,
+                                                       text_array=text_array)
         neuron_to_grid_distance = self.kernel.grid_size - self.neuron_radius
         self.indicator_lines: VGroup = VGroup(
             self.create_indicator_line(np.array([0, 0, -1]),
@@ -53,9 +69,11 @@ class NeuronWithKernel:
         )
         self.neuron: Circle = Circle(radius=self.neuron_radius, stroke_color=BLACK, fill_color=neuron_color,
                                      fill_opacity=1.0)
+        self.neuron_text: Text = create_faded_text(neuron_text)
         neuron_plus_indicator_lines_v_group: VGroup = VGroup(self.neuron, self.indicator_lines)
         neuron_plus_indicator_lines_v_group.next_to(self.kernel.v_group, direction=RIGHT, buff=0)
-        self.v_group = VGroup(self.kernel.v_group, self.indicator_lines, self.neuron)
+        self.neuron_text.move_to(self.neuron.get_center())
+        self.v_group = VGroup(self.kernel.v_group, self.indicator_lines, self.neuron, self.neuron_text)
 
     @staticmethod
     def create_indicator_line(start_position: np.ndarray, end_position: np.ndarray) -> Line:
@@ -88,29 +106,33 @@ class LayerBuildingComplexitySubScene:
         dark_to_light_gradient_neuron_color = RED
         light_to_dark_gradient_neuron_color = BLUE
         self.dark_to_light_gradient_neuron: NeuronWithKernel = NeuronWithKernel(
-            dark_to_light_gradient_neuron_color, np.array([[DARK_GRAY, LIGHT_GRAY, WHITE],
-                                                           [DARK_GRAY, LIGHT_GRAY, WHITE],
-                                                           [DARK_GRAY, LIGHT_GRAY, WHITE]]))
+            dark_to_light_gradient_neuron_color, 'r', np.array([[DARK_GRAY, LIGHT_GRAY, WHITE],
+                                                                [DARK_GRAY, LIGHT_GRAY, WHITE],
+                                                                [DARK_GRAY, LIGHT_GRAY, WHITE]]))
         self.dark_to_light_gradient_neuron.v_group.move_to(self.gradient_layer)
         self.v_group.add(self.dark_to_light_gradient_neuron.v_group)
         self.light_to_dark_gradient_neuron: NeuronWithKernel = NeuronWithKernel(
-            light_to_dark_gradient_neuron_color, np.array([[WHITE, LIGHT_GRAY, DARK_GRAY],
-                                                           [WHITE, LIGHT_GRAY, DARK_GRAY],
-                                                           [WHITE, LIGHT_GRAY, DARK_GRAY]]))
+            light_to_dark_gradient_neuron_color, 'b', np.array([[WHITE, LIGHT_GRAY, DARK_GRAY],
+                                                                [WHITE, LIGHT_GRAY, DARK_GRAY],
+                                                                [WHITE, LIGHT_GRAY, DARK_GRAY]]))
         self.light_to_dark_gradient_neuron.v_group.next_to(self.dark_to_light_gradient_neuron.v_group, direction=DOWN,
                                                            buff=self.layer_height / 10)
         self.v_group.add(self.light_to_dark_gradient_neuron.v_group)
         vertical_line_neuron_color = GREEN
         self.vertical_line_neuron: NeuronWithKernel = NeuronWithKernel(
-            vertical_line_neuron_color,
+            vertical_line_neuron_color, 'g',
             np.array([[WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color],
                       [WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color],
-                      [WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color]]))
+                      [WHITE, light_to_dark_gradient_neuron_color, dark_to_light_gradient_neuron_color]]),
+            np.array([['', 'b', 'r'],
+                      ['', 'b', 'r'],
+                      ['', 'b', 'r']])
+        )
         self.vertical_line_neuron.v_group.move_to(self.line_layer)
         self.v_group.add(self.vertical_line_neuron.v_group)
         horizontal_line_neuron_color = YELLOW
         self.horizontal_line_neuron: NeuronWithKernel = NeuronWithKernel(
-            horizontal_line_neuron_color,
+            horizontal_line_neuron_color, 'y',
             np.array([[WHITE, WHITE, WHITE, WHITE, WHITE],
                       [WHITE, WHITE, WHITE, WHITE, WHITE],
                       [LIGHT_GRAY, LIGHT_GRAY, LIGHT_GRAY, LIGHT_GRAY, LIGHT_GRAY],
@@ -139,7 +161,11 @@ class LayerBuildingComplexitySubScene:
             number_of_pixels=3,
             color_array=np.array([[WHITE, horizontal_line_neuron_color, horizontal_line_neuron_color],
                                   [vertical_line_neuron_color, WHITE, WHITE],
-                                  [vertical_line_neuron_color, WHITE, WHITE]]))
+                                  [vertical_line_neuron_color, WHITE, WHITE]]),
+            text_array=np.array([['', 'y', 'y'],
+                                 ['g', '', ''],
+                                 ['g', '', '']])
+        )
         self.corner_neuron_kernel.v_group.move_to(self.corner_layer.get_center(), aligned_edge=RIGHT)
         self.v_group.add(self.corner_neuron_kernel.v_group)
         self.corner_in_original_image_pixel_grid: PixelGridSquare = PixelGridSquare(
@@ -161,9 +187,8 @@ class LayerBuildingComplexitySubScene:
         self.v_group.add(self.corner_representation_arrow)
 
     def create_later_sections(self, scene: Scene):
-
         scene.next_section()
-        scene.play(FadeIn(self.light_to_dark_gradient_neuron.v_group))
+        scene.play(FadeIn(self.light_to_dark_gradient_neuron.v_group, self.dark_to_light_gradient_neuron.neuron_text))
 
         scene.next_section()
         scene.play(FadeIn(self.line_layer))
