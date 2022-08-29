@@ -95,6 +95,9 @@ class MainScene(Scene):
         out_scene_isometric_sub_scene_v_group.align_to(in_scene_isometric_sub_scene_v_group, direction=DOWN)
 
         self.next_section()
+        self.play(self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups[0][0].create_output_animation())
+
+        self.next_section()
         self.play(self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups[0][1].create_neuron_animation(),
                   self.isometric_neurons_looking_at_pixels_sub_scene.neuron_groups[0][1].create_kernel_animation())
 
